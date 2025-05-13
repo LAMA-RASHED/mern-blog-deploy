@@ -18,6 +18,7 @@ const ImageUploader = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Update imageUrl if initialImageUrl changes
   useEffect(() => {
     if (initialImageUrl) {
       setImageUrl(initialImageUrl);
@@ -25,6 +26,7 @@ const ImageUploader = ({
     }
   }, [initialImageUrl]);
 
+  // Create preview URL for selected file
   useEffect(() => {
     if (!selectedFile) {
       setPreviewUrl(null);
@@ -34,6 +36,7 @@ const ImageUploader = ({
     const url = URL.createObjectURL(selectedFile);
     setPreviewUrl(url);
 
+    // Clean up function to revoke the object URL
     return () => {
       URL.revokeObjectURL(url);
     };
@@ -59,6 +62,7 @@ const ImageUploader = ({
         setSelectedFile(file);
         setUseUrlInput(false);
         onImageSelected(file);
+        // onUrlEntered('');
       }
     }
   };
@@ -66,9 +70,11 @@ const ImageUploader = ({
   const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      // console.log('Selected file:', file);
       setSelectedFile(file);
       setUseUrlInput(false);
       onImageSelected(file);
+      // onUrlEntered('');
     }
   };
 
@@ -85,6 +91,7 @@ const ImageUploader = ({
       onImageSelected(null);
     } else {
       setImageUrl('');
+      onUrlEntered('');
     }
   };
 
