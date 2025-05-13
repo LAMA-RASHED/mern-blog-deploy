@@ -140,11 +140,11 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Upload image
-  const uploadImage = async (file: File): Promise<string | null> => {
+   
+  const uploadImage = async (): Promise<string | null> => {
     try {
       // This is a placeholder function - images are uploaded as part of the blog creation/update
       // We're keeping this function for potential future dedicated upload endpoint
-      console.log('File upload not implemented:', file.name);
       throw new Error(
         'Direct image uploads not supported - use blog create/update with file'
       );

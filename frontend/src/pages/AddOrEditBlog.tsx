@@ -56,7 +56,7 @@ const AddOrEditBlog = () => {
       function (value) {
         // Use hasFile from Formik values
         if (this.parent.hasFile) return true;
-        return !!value && /^https?:\/\/.+\..+/.test(value);
+        return !!value && typeof value === 'string' && /^https?:\/\/.+\..+/.test(value);
       }
     ),
     categoryId: string().required('Category is required'),
@@ -78,18 +78,18 @@ const AddOrEditBlog = () => {
   // Update hasFile in Formik when file is selected
   const handleImageSelected = (
     file: File | null,
-    setFieldValue: (field: string, value: string | boolean | any) => void
+    setFieldValue: (field: string, value: string | boolean | unknown) => void
   ) => {
     setSelectedFile(file);
-    setFieldValue('hasFile', Boolean(file));
+    setFieldValue('hasFile', !!file);
   };
 
   const handleImageUrlEntered = (
     url: string,
-    setFieldValue: (field: string, value: string | boolean | any) => void
+    setFieldValue: (field: string, value: string | boolean | unknown) => void
   ) => {
     setFieldValue('image', url);
-    setFieldValue('hasFile', false as any);
+    setFieldValue('hasFile', false as unknown);
   };
 
   return (
