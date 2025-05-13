@@ -140,7 +140,7 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Upload image
-   const uploadImage = async (): Promise<string | null> => {
+  const uploadImage = async (): Promise<string | null> => {
     try {
       // This is a placeholder function - images are uploaded as part of the blog creation/update
       // We're keeping this function for potential future dedicated upload endpoint
@@ -176,7 +176,31 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
         formData.append('title', data.title);
         formData.append('content', data.content);
         formData.append('categoryId', data.categoryId);
-        formData.append('image', file);
+
+        // Make sure the file is a valid File object before appending
+        if (file instanceof File && file.size > 0) {
+          console.log(
+            'Appending valid file to FormData:',
+            file.name,
+            file.size,
+            file.type
+          );
+          formData.append('image', file);
+        } else {
+          console.error('Invalid file object:', file);
+          // If file is invalid, try to use the image URL instead
+          if (
+            data.image &&
+            typeof data.image === 'string' &&
+            data.image !== 'https://placeholder.image/upload-pending'
+          ) {
+            console.log('Using image URL instead:', data.image);
+            formData.append('image', data.image);
+          } else {
+            console.error('No valid file or image URL available');
+            throw new Error('Invalid image file');
+          }
+        }
 
         // Log FormData contents
         console.log('FormData entries:');
