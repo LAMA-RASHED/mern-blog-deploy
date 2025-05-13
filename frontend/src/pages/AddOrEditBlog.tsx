@@ -40,7 +40,8 @@ const AddOrEditBlog = () => {
       });
       setIsEditMode(true);
     }
-  }, [state, getCategories]); // Runs on component mount or when state changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]); // Runs on component mount or when state changes
 
   // Add hasFile to initial values
   const initialValues = { ...blog, hasFile: false };
@@ -86,10 +87,10 @@ const AddOrEditBlog = () => {
 
   const handleImageUrlEntered = (
     url: string,
-    setFieldValue: (field: string, value: string | boolean | unknown) => void
+    setFieldValue: (field: string, value: string | boolean | any) => void
   ) => {
     setFieldValue('image', url);
-    setFieldValue('hasFile', false as unknown);
+    setFieldValue('hasFile', false as any);
   };
 
   return (
