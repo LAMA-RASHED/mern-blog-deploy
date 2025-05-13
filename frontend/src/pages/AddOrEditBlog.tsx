@@ -12,7 +12,6 @@ import ImageUploader from '../components/ImageUploader';
 
 // Debug form state
 
-
 const AddOrEditBlog = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -87,10 +86,18 @@ const AddOrEditBlog = () => {
       'selectedFile:',
       selectedFile
     );
+
+    // Safety check - if a file is selected, make sure hasFile is true
+    // This helps if somehow the form state got out of sync
+    const updatedValues = {
+      ...values,
+      hasFile: selectedFile ? true : values.hasFile,
+    };
+
     if (!isEditMode) {
-      createBlog(values, navigate, selectedFile);
+      createBlog(updatedValues, navigate, selectedFile);
     } else {
-      updateBlog(values, navigate, state._id, selectedFile);
+      updateBlog(updatedValues, navigate, state._id, selectedFile);
     }
     setSubmitting(false);
   };

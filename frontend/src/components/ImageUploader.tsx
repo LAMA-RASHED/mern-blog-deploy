@@ -62,7 +62,6 @@ const ImageUploader = ({
         setSelectedFile(file);
         setUseUrlInput(false);
         onImageSelected(file);
-        onUrlEntered('');
       }
     }
   };
@@ -73,7 +72,6 @@ const ImageUploader = ({
       setSelectedFile(file);
       setUseUrlInput(false);
       onImageSelected(file);
-      onUrlEntered('');
     }
   };
 
@@ -90,7 +88,6 @@ const ImageUploader = ({
       onImageSelected(null);
     } else {
       setImageUrl('');
-      onUrlEntered('');
     }
   };
 
