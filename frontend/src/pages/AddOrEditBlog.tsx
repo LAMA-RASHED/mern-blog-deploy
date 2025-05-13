@@ -6,7 +6,7 @@ import { Field, Form, Formik } from 'formik';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { FormikHelpers } from 'formik';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import InputComponent from '../components/InputComponent';
 import ImageUploader from '../components/ImageUploader';
 
@@ -14,6 +14,7 @@ const AddOrEditBlog = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { createBlog, updateBlog, categories, getCategories } = useBlog();
+  const formikRef = useRef(null);
 
   const [blog, setBlog] = useState<IBlogForm>({
     title: '',
@@ -41,7 +42,15 @@ const AddOrEditBlog = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  const initialValues = { ...blog, hasFile: selectedFile ? true : false };
+  // This effect updates the Formik hasFile value whenever selectedFile changes
+  useEffect(() => {
+    if (formikRef.current) {
+      // @ts-expect-error - Formik internal API
+      formikRef.current.setFieldValue('hasFile', !!selectedFile);
+    }
+  }, [selectedFile]);
+
+  const initialValues = { ...blog, hasFile: false };
 
   const validationSchema = object({
     title: string()
@@ -52,10 +61,8 @@ const AddOrEditBlog = () => {
       'image-required',
       'Image is required',
       function (value) {
-        // Log the values for debugging purposes
-        console.log('hasFile:', this.parent.hasFile);
-        console.log('image value:', value);
-
+        console.log('Validation running with hasFile:', this.parent.hasFile);
+        // If we have a file, don't require an image URL
         return (
           this.parent.hasFile ||
           (!!value &&
@@ -103,6 +110,7 @@ const AddOrEditBlog = () => {
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
           enableReinitialize
+          innerRef={formikRef}
         >
           {(formikProps) => (
             <Form>
@@ -160,12 +168,11 @@ const AddOrEditBlog = () => {
               <ImageUploader
                 onImageSelected={(file) => {
                   setSelectedFile(file);
-                  formikProps.setFieldValue('hasFile', !!file);
-                  formikProps.setFieldValue('image', file ? 'dummy' : '');
+                  // Don't need to call setFieldValue here as it will be handled by the useEffect
                 }}
                 onUrlEntered={(url) => {
                   formikProps.setFieldValue('image', url);
-                  formikProps.setFieldValue('hasFile', false);
+                  setSelectedFile(null); // Clear file selection when URL is entered
                 }}
                 initialImageUrl={blog.image}
               />
@@ -174,6 +181,9 @@ const AddOrEditBlog = () => {
                   {formikProps.errors.image}
                 </div>
               ) : null}
+
+              {/* This is the crucial hidden field that Formik will track */}
+              <Field type="hidden" name="hasFile" />
 
               <div className="mt-4 mb-2 p-2 bg-gray-100 rounded text-xs">
                 <h4 className="font-bold">Debug Info:</h4>
