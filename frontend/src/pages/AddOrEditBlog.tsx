@@ -1,13 +1,14 @@
 import Layout from '../components/Layout';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBlog } from '../context/BlogContext';
-import { object, string } from 'yup';
+import { object, string, mixed } from 'yup';
 import { Field, Form, Formik } from 'formik';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { FormikHelpers } from 'formik';
 import { useEffect, useState } from 'react';
 import InputComponent from '../components/InputComponent';
+import ImageUploader from '../components/ImageUploader';
 
 const AddOrEditBlog = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const AddOrEditBlog = () => {
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     // Fetch categories when the component mounts
@@ -40,27 +42,54 @@ const AddOrEditBlog = () => {
     }
   }, [state, getCategories]); // Runs on component mount or when state changes
 
-  const initialValues = blog;
+  // Add hasFile to initial values
+  const initialValues = { ...blog, hasFile: false };
 
   const validationSchema = object({
     title: string()
       .required('Title is required')
       .min(3, 'Title must be at least 3 characters long'),
     content: string().required('Content is required'),
-    image: string().url('Invalid URL').required('Image URL is required'),
+    image: mixed().test(
+      'image-required',
+      'Image is required',
+      function (value) {
+        // Use hasFile from Formik values
+        if (this.parent.hasFile) return true;
+        return !!value && /^https?:\/\/.+\..+/.test(value);
+      }
+    ),
     categoryId: string().required('Category is required'),
+    hasFile: mixed(), // not validated, just for logic
   });
 
   const handleSubmit = (
-    values: IBlogForm,
-    { setSubmitting }: FormikHelpers<IBlogForm>
+    values: IBlogForm & { hasFile: boolean },
+    { setSubmitting }: FormikHelpers<IBlogForm & { hasFile: boolean }>
   ) => {
     if (!isEditMode) {
-      createBlog(values, navigate);
+      createBlog(values, navigate, selectedFile);
     } else {
-      updateBlog(values, navigate, state._id);
+      updateBlog(values, navigate, state._id, selectedFile);
     }
     setSubmitting(false);
+  };
+
+  // Update hasFile in Formik when file is selected
+  const handleImageSelected = (
+    file: File | null,
+    setFieldValue: (field: string, value: string | boolean | any) => void
+  ) => {
+    setSelectedFile(file);
+    setFieldValue('hasFile', !!file as any);
+  };
+
+  const handleImageUrlEntered = (
+    url: string,
+    setFieldValue: (field: string, value: string | boolean | any) => void
+  ) => {
+    setFieldValue('image', url);
+    setFieldValue('hasFile', false as any);
   };
 
   return (
@@ -73,7 +102,7 @@ const AddOrEditBlog = () => {
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
-          enableReinitialize // This allows Formik to reinitialize the form when `initialValues` changes
+          enableReinitialize
         >
           {({ errors, touched, setFieldValue }) => (
             <Form>
@@ -125,14 +154,21 @@ const AddOrEditBlog = () => {
                 ) : null}
               </div>
 
-              <InputComponent
-                errors={errors}
-                touched={touched}
-                label="Image URL"
-                name="image"
-                inputType="url"
-                placeholder="https://image.com"
+              <ImageUploader
+                onImageSelected={(file) =>
+                  handleImageSelected(file, setFieldValue)
+                }
+                onUrlEntered={(url) =>
+                  handleImageUrlEntered(url, setFieldValue)
+                }
+                initialImageUrl={blog.image}
               />
+              {errors.image && touched.image ? (
+                <div className="text-red-500 text-sm">{errors.image}</div>
+              ) : null}
+
+              {/* Hidden field for hasFile */}
+              <Field type="hidden" name="hasFile" />
 
               <div className="my-4 flex justify-center">
                 <button className="btn-primary" type="submit">

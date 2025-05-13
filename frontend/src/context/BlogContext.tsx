@@ -17,7 +17,8 @@ interface IBlogContext {
   getBlogs: () => Promise<void>;
   createBlog: (
     data: IBlogForm,
-    navigate: (path: string) => void
+    navigate: (path: string) => void,
+    file?: File | null
   ) => Promise<void>;
   addComment: (id: string, content: string) => Promise<void>;
   deleteBlog: (id: string, navigate: (path: string) => void) => Promise<void>;
@@ -25,8 +26,10 @@ interface IBlogContext {
   updateBlog: (
     data: IBlogForm,
     navigate: (path: string) => void,
-    id: string
+    id: string,
+    file?: File | null
   ) => Promise<void>;
+  uploadImage: (file: File) => Promise<string | null>;
   currentBlog: ISingleBlog | null;
   blogs: IBlog[];
   categories: IBlogCategory[];
@@ -44,6 +47,7 @@ const BlogContext = createContext<IBlogContext>({
   deleteBlog: async () => {},
   addLike: async () => {},
   updateBlog: async () => {},
+  uploadImage: async () => null,
   currentBlog: null,
   blogs: [],
   categories: [],
@@ -135,19 +139,57 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Upload image
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      // This is a placeholder function - images are uploaded as part of the blog creation/update
+      // We're keeping this function for potential future dedicated upload endpoint
+      throw new Error(
+        'Direct image uploads not supported - use blog create/update with file'
+      );
+    } catch (error) {
+      console.log(error);
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.message);
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      }
+      return null;
+    }
+  };
+
   // Create Post
   const createBlog = async (
     data: IBlogForm,
-    navigate: (path: string) => void
+    navigate: (path: string) => void,
+    file?: File | null
   ) => {
     const token = JSON.parse(localStorage.getItem('user') || '{}').token;
     try {
-      await axios.post(`${baseUrl}/blogs`, data, {
-        headers: {
-          Authorization: `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      if (file) {
+        // If file is provided, use FormData to submit
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('content', data.content);
+        formData.append('categoryId', data.categoryId);
+        formData.append('image', file);
+
+        await axios.post(`${baseUrl}/blogs`, formData, {
+          headers: {
+            Authorization: `Token ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      } else {
+        // If no file is provided, use JSON data
+        await axios.post(`${baseUrl}/blogs`, data, {
+          headers: {
+            Authorization: `Token ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
       toast.success('Post created successfully!');
       navigate('/');
     } catch (error) {
@@ -237,16 +279,34 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
   const updateBlog = async (
     data: IBlogForm,
     navigate: (path: string) => void,
-    id: string
+    id: string,
+    file?: File | null
   ) => {
     const token = JSON.parse(localStorage.getItem('user') || '{}').token;
     try {
-      await axios.put(`${baseUrl}/blogs/${id}`, data, {
-        headers: {
-          Authorization: `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      if (file) {
+        // If file is provided, use FormData to submit
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('content', data.content);
+        formData.append('categoryId', data.categoryId);
+        formData.append('image', file);
+
+        await axios.put(`${baseUrl}/blogs/${id}`, formData, {
+          headers: {
+            Authorization: `Token ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      } else {
+        // If no file is provided, use JSON data
+        await axios.put(`${baseUrl}/blogs/${id}`, data, {
+          headers: {
+            Authorization: `Token ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
       toast.success('Post updated successfully!');
       navigate('/');
     } catch (error) {
@@ -282,6 +342,7 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
     addComment,
     addLike,
     updateBlog,
+    uploadImage,
     currentBlog,
     categories,
     getCategories,
