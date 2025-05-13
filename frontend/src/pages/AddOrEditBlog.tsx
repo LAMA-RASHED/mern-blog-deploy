@@ -10,6 +10,9 @@ import { useEffect, useState } from 'react';
 import InputComponent from '../components/InputComponent';
 import ImageUploader from '../components/ImageUploader';
 
+// Debug form state
+
+
 const AddOrEditBlog = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -40,7 +43,7 @@ const AddOrEditBlog = () => {
       });
       setIsEditMode(true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]); // Runs on component mount or when state changes
 
   // Add hasFile to initial values
@@ -56,8 +59,18 @@ const AddOrEditBlog = () => {
       'Image is required',
       function (value) {
         // Use hasFile from Formik values
-        if (this.parent.hasFile) return true;
-        return !!value && typeof value === 'string' && /^https?:\/\/.+\..+/.test(value);
+        console.log(
+          'Validation running - hasFile:',
+          this.parent.hasFile,
+          'image value:',
+          value
+        );
+        return (
+          this.parent.hasFile ||
+          (!!value &&
+            typeof value === 'string' &&
+            /^https?:\/\/.+\..+/.test(value))
+        );
       }
     ),
     categoryId: string().required('Category is required'),
@@ -68,6 +81,12 @@ const AddOrEditBlog = () => {
     values: IBlogForm & { hasFile: boolean },
     { setSubmitting }: FormikHelpers<IBlogForm & { hasFile: boolean }>
   ) => {
+    console.log(
+      'Form submission - values:',
+      values,
+      'selectedFile:',
+      selectedFile
+    );
     if (!isEditMode) {
       createBlog(values, navigate, selectedFile);
     } else {
@@ -81,16 +100,28 @@ const AddOrEditBlog = () => {
     file: File | null,
     setFieldValue: (field: string, value: string | boolean | unknown) => void
   ) => {
+    console.log('File selected:', file?.name, file?.size);
     setSelectedFile(file);
+
+    // Important: Set hasFile to true if a file is selected
     setFieldValue('hasFile', !!file);
+    console.log('hasFile set to:', !!file);
+
+    // Set a default image URL too just in case
+    if (file) {
+      setFieldValue('image', 'https://placeholder.image/upload-pending');
+      // Touch the hasFile field to trigger validation
+      setFieldValue('hasFile', true);
+    }
   };
 
   const handleImageUrlEntered = (
     url: string,
-    setFieldValue: (field: string, value: string | boolean | any) => void
+    setFieldValue: (field: string, value: string | boolean | unknown) => void
   ) => {
+    console.log('URL entered:', url);
     setFieldValue('image', url);
-    setFieldValue('hasFile', false as any);
+    setFieldValue('hasFile', false);
   };
 
   return (
@@ -105,11 +136,11 @@ const AddOrEditBlog = () => {
           onSubmit={handleSubmit}
           enableReinitialize
         >
-          {({ errors, touched, setFieldValue }) => (
+          {(formikProps) => (
             <Form>
               <InputComponent
-                errors={errors}
-                touched={touched}
+                errors={formikProps.errors}
+                touched={formikProps.touched}
                 label="Blog Title"
                 name="title"
                 inputType="text"
@@ -133,9 +164,10 @@ const AddOrEditBlog = () => {
                     </option>
                   ))}
                 </Field>
-                {errors.categoryId && touched.categoryId ? (
+                {formikProps.errors.categoryId &&
+                formikProps.touched.categoryId ? (
                   <div className="text-red-500 text-sm">
-                    {errors.categoryId}
+                    {formikProps.errors.categoryId}
                   </div>
                 ) : null}
               </div>
@@ -147,28 +179,51 @@ const AddOrEditBlog = () => {
                   data={blog ? blog.content : ''}
                   onChange={(_, editor) => {
                     const data = editor.getData();
-                    setFieldValue('content', data);
+                    formikProps.setFieldValue('content', data);
                   }}
                 />
-                {errors.content && touched.content ? (
-                  <div className="text-red-500 text-sm">{errors.content}</div>
+                {formikProps.errors.content && formikProps.touched.content ? (
+                  <div className="text-red-500 text-sm">
+                    {formikProps.errors.content}
+                  </div>
                 ) : null}
               </div>
 
               <ImageUploader
                 onImageSelected={(file) =>
-                  handleImageSelected(file, setFieldValue)
+                  handleImageSelected(file, formikProps.setFieldValue)
                 }
                 onUrlEntered={(url) =>
-                  handleImageUrlEntered(url, setFieldValue)
+                  handleImageUrlEntered(url, formikProps.setFieldValue)
                 }
                 initialImageUrl={blog.image}
               />
-              {errors.image && touched.image ? (
-                <div className="text-red-500 text-sm">{errors.image}</div>
+              {formikProps.errors.image && formikProps.touched.image ? (
+                <div className="text-red-500 text-sm">
+                  {formikProps.errors.image}
+                </div>
               ) : null}
 
-              {/* Hidden field for hasFile */}
+              {/* Debug form state */}
+              <div className="mt-4 mb-2 p-2 bg-gray-100 rounded text-xs">
+                <h4 className="font-bold">Debug Info:</h4>
+                <p>
+                  Selected File:{' '}
+                  {selectedFile
+                    ? `${selectedFile.name} (${Math.round(
+                        selectedFile.size / 1024
+                      )} KB)`
+                    : 'None'}
+                </p>
+                <p>
+                  hasFile in form:{' '}
+                  {formikProps.values.hasFile ? 'true' : 'false'}
+                </p>
+                <p>image in form: {formikProps.values.image}</p>
+                <p>Errors: {JSON.stringify(formikProps.errors)}</p>
+              </div>
+
+              {/* This field is crucial - it gets set when a file is selected */}
               <Field type="hidden" name="hasFile" />
 
               <div className="my-4 flex justify-center">

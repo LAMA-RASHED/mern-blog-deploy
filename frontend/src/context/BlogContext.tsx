@@ -140,8 +140,7 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Upload image
-   
-  const uploadImage = async (): Promise<string | null> => {
+   const uploadImage = async (): Promise<string | null> => {
     try {
       // This is a placeholder function - images are uploaded as part of the blog creation/update
       // We're keeping this function for potential future dedicated upload endpoint
@@ -167,7 +166,11 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     const token = JSON.parse(localStorage.getItem('user') || '{}').token;
     try {
+      console.log('CreateBlog called with file:', file?.name);
+      console.log('Form data:', data);
+
       if (file) {
+        console.log('Using FormData for file upload');
         // If file is provided, use FormData to submit
         const formData = new FormData();
         formData.append('title', data.title);
@@ -175,27 +178,40 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
         formData.append('categoryId', data.categoryId);
         formData.append('image', file);
 
-        await axios.post(`${baseUrl}/blogs`, formData, {
+        // Log FormData contents
+        console.log('FormData entries:');
+        console.log('title:', data.title);
+        console.log('content:', data.content);
+        console.log('categoryId:', data.categoryId);
+        console.log('image:', file.name);
+
+        const response = await axios.post(`${baseUrl}/blogs`, formData, {
           headers: {
             Authorization: `Token ${token}`,
             'Content-Type': 'multipart/form-data',
           },
         });
+        console.log('Upload successful:', response.data);
       } else {
+        console.log('Using JSON data (no file)');
         // If no file is provided, use JSON data
-        await axios.post(`${baseUrl}/blogs`, data, {
+        const response = await axios.post(`${baseUrl}/blogs`, data, {
           headers: {
             Authorization: `Token ${token}`,
             'Content-Type': 'application/json',
           },
         });
+        console.log('Post successful:', response.data);
       }
       toast.success('Post created successfully!');
       navigate('/');
     } catch (error) {
-      console.log(error);
+      console.log('Error in createBlog:', error);
       if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message);
+        console.log('Axios error details:', error.response?.data);
+        toast.error(
+          error.response?.data?.message || 'Failed to create blog post'
+        );
       } else if (error instanceof Error) {
         toast.error(error.message);
       }
