@@ -10,8 +10,6 @@ import { useEffect, useState } from 'react';
 import InputComponent from '../components/InputComponent';
 import ImageUploader from '../components/ImageUploader';
 
-// Debug form state
-
 const AddOrEditBlog = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -29,10 +27,8 @@ const AddOrEditBlog = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
-    // Fetch categories when the component mounts
     getCategories();
 
-    // If there's state (editing mode), update blog state and set edit mode
     if (state) {
       setBlog({
         title: state.title,
@@ -43,10 +39,9 @@ const AddOrEditBlog = () => {
       setIsEditMode(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]); // Runs on component mount or when state changes
+  }, [state]);
 
-  // Add hasFile to initial values
-  const initialValues = { ...blog, hasFile: false };
+  const initialValues = { ...blog, hasFile: selectedFile ? true : false };
 
   const validationSchema = object({
     title: string()
@@ -57,7 +52,10 @@ const AddOrEditBlog = () => {
       'image-required',
       'Image is required',
       function (value) {
-        // Only check Formik's hasFile and image value
+        // Log the values for debugging purposes
+        console.log('hasFile:', this.parent.hasFile);
+        console.log('image value:', value);
+
         return (
           this.parent.hasFile ||
           (!!value &&
@@ -67,7 +65,7 @@ const AddOrEditBlog = () => {
       }
     ),
     categoryId: string().required('Category is required'),
-    hasFile: mixed(), // not validated, just for logic
+    hasFile: mixed(),
   });
 
   const handleSubmit = (
@@ -81,8 +79,6 @@ const AddOrEditBlog = () => {
       selectedFile
     );
 
-    // Safety check - if a file is selected, make sure hasFile is true
-    // This helps if somehow the form state got out of sync
     const updatedValues = {
       ...values,
       hasFile: selectedFile ? true : values.hasFile,
@@ -179,7 +175,6 @@ const AddOrEditBlog = () => {
                 </div>
               ) : null}
 
-              {/* Debug form state */}
               <div className="mt-4 mb-2 p-2 bg-gray-100 rounded text-xs">
                 <h4 className="font-bold">Debug Info:</h4>
                 <p>
