@@ -140,11 +140,11 @@ export const BlogProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Upload image
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       // This is a placeholder function - images are uploaded as part of the blog creation/update
       // We're keeping this function for potential future dedicated upload endpoint
+      console.log('File upload not implemented:', file.name);
       throw new Error(
         'Direct image uploads not supported - use blog create/update with file'
       );

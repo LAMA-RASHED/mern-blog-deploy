@@ -81,7 +81,7 @@ const AddOrEditBlog = () => {
     setFieldValue: (field: string, value: string | boolean | any) => void
   ) => {
     setSelectedFile(file);
-    setFieldValue('hasFile', !!file as any);
+    setFieldValue('hasFile', Boolean(file));
   };
 
   const handleImageUrlEntered = (
