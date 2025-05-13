@@ -57,23 +57,9 @@ const AddOrEditBlog = () => {
       'image-required',
       'Image is required',
       function (value) {
-        // Log values to debug
-        console.log(
-          'Validation running - hasFile:',
-          this.parent.hasFile,
-          'selectedFile exists:',
-          !!selectedFile,
-          'image value:',
-          value
-        );
-
-        // Accept if either:
-        // 1. hasFile is true in the form
-        // 2. We have a selectedFile in the component state
-        // 3. There's a valid image URL
+        // Only check Formik's hasFile and image value
         return (
           this.parent.hasFile ||
-          !!selectedFile ||
           (!!value &&
             typeof value === 'string' &&
             /^https?:\/\/.+\..+/.test(value))
@@ -108,60 +94,6 @@ const AddOrEditBlog = () => {
       updateBlog(updatedValues, navigate, state._id, selectedFile);
     }
     setSubmitting(false);
-  };
-
-  // Update hasFile in Formik when file is selected
-  const handleImageSelected = (
-    file: File | null,
-    setFieldValue: (field: string, value: string | boolean | unknown) => void
-  ) => {
-    console.log('File selected:', file?.name, file?.size);
-    setSelectedFile(file);
-
-    // Important: Set hasFile to true if a file is selected
-    if (file) {
-      console.log('Setting hasFile to true and updating selectedFile');
-
-      // Force hasFile to true in the form
-      setFieldValue('hasFile', true);
-
-      // Also set a dummy image URL to ensure validation passes
-      setFieldValue('image', 'https://placeholder.image/upload-pending');
-
-      // Directly touch the hasFile field to force validation
-      try {
-        const inputEl = document.querySelector(
-          'input[name="hasFile"]'
-        ) as HTMLInputElement;
-        if (inputEl) {
-          inputEl.value = 'true';
-          console.log('Directly set input value to:', inputEl.value);
-        }
-      } catch (e) {
-        console.error('Error setting input value directly:', e);
-      }
-
-      // Add a slight delay to ensure state updates correctly
-      setTimeout(() => {
-        console.log('Checking if hasFile was set correctly in form');
-        const formEl = document.querySelector('form');
-        if (formEl) {
-          const formData = new FormData(formEl);
-          console.log('Form hasFile value:', formData.get('hasFile'));
-        }
-      }, 100);
-    } else {
-      setFieldValue('hasFile', false);
-    }
-  };
-
-  const handleImageUrlEntered = (
-    url: string,
-    setFieldValue: (field: string, value: string | boolean | unknown) => void
-  ) => {
-    console.log('URL entered:', url);
-    setFieldValue('image', url);
-    setFieldValue('hasFile', false);
   };
 
   return (
@@ -230,12 +162,15 @@ const AddOrEditBlog = () => {
               </div>
 
               <ImageUploader
-                onImageSelected={(file) =>
-                  handleImageSelected(file, formikProps.setFieldValue)
-                }
-                onUrlEntered={(url) =>
-                  handleImageUrlEntered(url, formikProps.setFieldValue)
-                }
+                onImageSelected={(file) => {
+                  setSelectedFile(file);
+                  formikProps.setFieldValue('hasFile', !!file);
+                  formikProps.setFieldValue('image', file ? 'dummy' : '');
+                }}
+                onUrlEntered={(url) => {
+                  formikProps.setFieldValue('image', url);
+                  formikProps.setFieldValue('hasFile', false);
+                }}
                 initialImageUrl={blog.image}
               />
               {formikProps.errors.image && formikProps.touched.image ? (
@@ -262,26 +197,6 @@ const AddOrEditBlog = () => {
                 <p>image in form: {formikProps.values.image}</p>
                 <p>Errors: {JSON.stringify(formikProps.errors)}</p>
               </div>
-
-              {/* This field is crucial - it gets set when a file is selected */}
-              <Field
-                type="hidden"
-                name="hasFile"
-                id="hasFile"
-                value={selectedFile ? 'true' : formikProps.values.hasFile}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  console.log('hasFile field changed to:', e.target.value);
-                  // Make sure if we have a file selected, hasFile is always true
-                  if (selectedFile && e.target.value !== 'true') {
-                    formikProps.setFieldValue('hasFile', true);
-                  } else {
-                    formikProps.setFieldValue(
-                      'hasFile',
-                      e.target.value === 'true'
-                    );
-                  }
-                }}
-              />
 
               <div className="my-4 flex justify-center">
                 <button className="btn-primary" type="submit">
