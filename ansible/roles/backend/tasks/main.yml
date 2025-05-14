@@ -1,0 +1,38 @@
+---
+- name: Update and Install Packages
+  apt:
+    update_cache: yes
+    name:
+      - git
+      - curl
+      - unzip
+      - tar
+      - gcc
+      - g++
+      - make
+      - nodejs
+      - npm
+    state: latest
+
+- name: Clone the blog app repository
+  git:
+    repo: 'https://github.com/cw-barry/blog-app-MERN.git'
+    dest: '/home/ubuntu/blog-app'
+
+- name: Set up .env file for backend
+  template:
+    src: backend.env.j2
+    dest: '/home/ubuntu/blog-app/backend/.env'
+    owner: ubuntu
+    group: ubuntu
+    mode: '0644'
+
+- name: Install Node.js dependencies
+  npm:
+    path: "/home/ubuntu/blog-app/backend"
+    state: present
+
+- name: Start the backend using PM2
+  shell: |
+    pm2 start /home/ubuntu/blog-app/backend/index.js --name "blog-backend"
+    pm2 save
