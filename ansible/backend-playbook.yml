@@ -1,0 +1,87 @@
+- name: Deploy Blog Backend
+  hosts: backend
+  become: yes
+
+  vars_files:
+    - roles/backend/vars/main.yml
+
+  tasks:
+    - name: Update and install essential packages
+      apt:
+        update_cache: yes
+        name:
+          - git
+          - curl
+          - unzip
+          - tar
+          - gcc
+          - g++
+          - make
+        state: present
+
+    - name: Install NVM and Node.js via NVM
+      become_user: admin
+      shell: |
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        nvm install --lts
+        nvm alias default node
+      args:
+        executable: /bin/bash
+
+    - name: Install PM2 globally via NVM
+      become_user: admin
+      shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        npm install -g pm2
+      args:
+        executable: /bin/bash
+
+    - name: Remove existing blog-app directory if it exists
+      file:
+        path: /home/admin/blog-app
+        state: absent
+
+    - name: Clone the backend repository
+      become_user: admin
+      git:
+        repo: 'https://github.com/cw-barry/blog-app-MERN.git'
+        dest: /home/admin/blog-app
+
+    - name: Create .env file for backend
+      template:
+        src: backend.env.j2
+        dest: /home/admin/blog-app/backend/.env
+        owner: admin
+        group: admin
+        mode: '0644'
+
+    - name: Install backend dependencies using npm
+      become_user: admin
+      shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        cd /home/admin/blog-app/backend
+        npm install
+      args:
+        executable: /bin/bash
+
+    - name: Create logs directory
+      file:
+        path: /home/admin/blog-app/logs
+        state: directory
+        mode: '0755'
+        owner: admin
+        group: admin
+
+    - name: Start the backend using PM2
+      become_user: admin
+      shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        pm2 start /home/admin/blog-app/backend/index.js --name "blog-backend"
+        pm2 save
+      args:
+        executable: /bin/bash
