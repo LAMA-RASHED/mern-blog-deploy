@@ -1,0 +1,36 @@
+---
+- name: Set up frontend server
+  hosts: frontend
+  become: true
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - git
+          - curl
+          - npm
+        state: present
+
+    - name: Clone the repository
+      git:
+        repo: 'https://github.com/cw-barry/blog-app-MERN.git'
+        dest: '/home/ubuntu/blog-app'
+
+    - name: Install Node.js dependencies
+      npm:
+        path: "/home/ubuntu/blog-app/frontend"
+        state: present
+
+    - name: Build the frontend
+      shell: |
+        cd /home/ubuntu/blog-app/frontend
+        npm install
+        npm run build
+
+    - name: Deploy to S3
+      aws_s3:
+        bucket: "your-s3-bucket-name"
+        object: "/"
+        file: "/home/ubuntu/blog-app/frontend/dist"
+        mode: "put"
+        region: "eu-north-1"
